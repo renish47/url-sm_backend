@@ -4,6 +4,10 @@ const emailJs = require("@emailjs/nodejs");
 
 const User = require("../model/user");
 
+// const baseUrl = "http://localhost:5173"
+const baseUrl = "https://url-sm.netlify.app"
+
+
 async function sendEmail(templateParams, templateId) {
     const serviceId = "service_93kbnlyfhgh";
     const response = await emailJs.send(serviceId, templateId, templateParams, {
@@ -172,7 +176,7 @@ exports.sendResetPasswordMail = async (req, res, next) => {
 
         let resetID = generateRandomNumber()
 
-        let resetLink = `http://localhost:5173/reset-password/${String(userData._id)}-${resetID}`
+        let resetLink = `${baseUrl}/reset-password/${String(userData._id)}-${resetID}`
         userData.isResetPasswordEnabled = true;
         userData.resetId = resetID;
         await User.findOneAndUpdate({ email }, { ...userData })
