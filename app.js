@@ -3,11 +3,10 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotEnv = require('dotenv').config();
 
-
 const userRouter = require('./routes/user');
 const urlRouter = require('./routes/url');
 
-
+const PORT = 8000
 const app = express();
 
 app.use(bodyParser.json());
@@ -32,7 +31,7 @@ app.use((error, req, res, next) => {
 
 mongoose.connect(process.env.MONGO_URL)
     .then(res => {
-        app.listen(process.env.PORT);
+        app.listen(PORT);
         console.log("App is Listening");
     })
     .catch(err => console.log(err));
