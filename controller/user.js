@@ -5,8 +5,8 @@ const sgMail = require('@sendgrid/mail')
 
 const User = require("../model/user");
 
-const baseUrl = "http://localhost:5173"
-// const baseUrl = "https://url-sm.netlify.app"
+// const baseUrl = "http://localhost:5173"
+const baseUrl = "https://url-sm.netlify.app"
 
 async function sendOtpMail(user) {
 
