@@ -1,20 +1,72 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const emailJs = require("@emailjs/nodejs");
+const sgMail = require('@sendgrid/mail')
+
 
 const User = require("../model/user");
 
-// const baseUrl = "http://localhost:5173"
-const baseUrl = "https://url-sm.netlify.app"
+const baseUrl = "http://localhost:5173"
+// const baseUrl = "https://url-sm.netlify.app"
 
+async function sendOtpMail(user) {
 
-async function sendEmail(templateParams, templateId) {
-    const serviceId = "service_93kbnlyfhgh";
-    const response = await emailJs.send(serviceId, templateId, templateParams, {
-        publicKey: process.env.EMAILJS_PUBLIC_KEY,
-        privateKey: process.env.EMAILJS_PRIVATE_KEY
-    })
-    return response;
+    try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+        const msg = {
+            to: user.email,
+            from: 'urlsm.official@gmail.com',
+            subject: 'Email Verification',
+            html: `
+        <div style="max-width: 600px; margin: 0px auto; padding: 20px; background-color: #f7f7f7; text-align: left; color: #000000; border-radius: 10px;">
+        <h1><span style="color: rgb(10, 23, 78); font-size: 18pt;">OTP Verification for Email</span></h1>
+        <p>Dear ${user.name},</p>
+        <p>Thank you for creating an account with URL-SM. To complete the registration process, please enter the following One-Time Password (OTP) in the verification form:</p>
+        <div class="otp-container">
+        <h2 id="otp" class="otp" style="text-align: center;"><span style="color: rgb(10, 23, 78); font-size: 24pt;">${user.otp}</span></h2>
+        </div>
+        <p>Please note that this OTP is valid for a limited time and can only be used once. If you didn't request this&nbsp;</p>
+        <p>verification,&nbsp;you can safely ignore this email.</p>
+        <p>&nbsp;</p>
+        <p>Thank you,<span style="color: rgb(10, 23, 78);"> </span></p>
+        <p><span style="color: rgb(10, 23, 78);">URL-SM Team</span></p>
+        </div>
+        `,
+        }
+        await sgMail.send(msg)
+
+    } catch (error) {
+        throw error
+    }
+}
+
+async function sendResetPassswordLink(user) {
+    try {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+        const msg = {
+            to: user.email,
+            from: 'urlsm.official@gmail.com',
+            subject: 'Reset Password',
+            html: `
+        <div style="max-width: 600px; margin: 0px auto; padding: 20px; background-color: #f7f7f7; border-radius: 10px;">
+        <h2 style="color: rgb(10, 23, 78); margin-bottom: 20px;">Reset Password</h2>
+        <p style="margin-bottom: 10px; color: #000000;">Dear ${user.name},</p>
+        <p style="margin-bottom: 10px; color: #000000;">We received a request to reset your password. To proceed with the password reset, please click the button below:</p>
+        <p style="margin-bottom: 10px;">&nbsp;</p>
+        <p style="text-align: center;"><a style="display: inline-block; padding: 10px 20px; background-color: #0a174e; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: bold; transition: background-color 0.3s ease; cursor: pointer;" href=${user.resetLink} target="_blank" rel="noopener">Reset Password</a></p>
+        <p style="text-align: center;">&nbsp;</p>
+        <p style="margin-bottom: 10px; color: #000000;">If the Reset Pasword Button doesn't work, copy the link below and paste it in the browser to get redirected to reset password page:</p>
+        <p style="margin-bottom: 10px;">${user.resetLink}</p>
+        <p style="margin-bottom: 10px;">&nbsp;</p>
+        <p style="margin-bottom: 10px; color: #000000;">Best regards,</p>
+        <p style="margin-bottom: 0px; color: #000000;">url-sm</p>
+        </div>
+        `,
+        }
+        await sgMail.send(msg)
+
+    } catch (error) {
+        throw error
+    }
 }
 
 function generateRandomNumber() {
@@ -61,14 +113,7 @@ exports.createUser = async (req, res, next) => {
             await newUser.save()
         }
 
-        const response = await sendEmail({ name: firstName, email, otp }, "template_addvp4m")
-        if (response.status !== 200) {
-            const error = new Error(response.text)
-            error.status = response.status
-            throw error
-        }
-
-
+        const response = await sendOtpMail({ name: firstName, email, otp })
         res.status(201).json({
             message: "User created Successfully"
         })
@@ -180,12 +225,7 @@ exports.sendResetPasswordMail = async (req, res, next) => {
         userData.isResetPasswordEnabled = true;
         userData.resetId = resetID;
         await User.findOneAndUpdate({ email }, { ...userData })
-        const response = await sendEmail({ email, resetLink, name: userData.firstName }, "template_qc3nqkf")
-        if (response.status !== 200) {
-            const error = new Error(response.text)
-            error.status = response.status;
-            throw error
-        }
+        await sendResetPassswordLink({ email, resetLink, name: userData.firstName })
         res.status(200).json({ message: "reset link sent" })
 
 
@@ -233,5 +273,7 @@ exports.checkUrlValidity = async (req, res, next) => {
         }
     }
 }
+
+
 
 
